@@ -1,0 +1,13 @@
+customer_id,plan,monthly_price,tenure_months,weekly_usage_hours,support_tickets,churned
+C001,Basic,10,3,2.5,3,1
+C002,Basic,10,12,5.0,1,0
+C003,Pro,25,8,9.5,0,0
+C004,Pro,25,2,3.0,4,1
+C005,Premium,45,18,14.0,0,0
+C006,Premium,45,6,8.0,1,0
+C007,Basic,10,1,1.0,5,1
+C008,Pro,25,15,11.0,1,0
+C009,Premium,45,4,,2,1
+C010,Basic,10,10,6.0,0,0
+C011,Pro,25,,7.5,2,0
+C012,Premium,45,20,16.0,0,0
