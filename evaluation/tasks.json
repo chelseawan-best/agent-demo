@@ -1,0 +1,42 @@
+[
+  {
+    "id": "dataset_overview",
+    "question": "How many rows and columns are in the dataset, and which columns contain missing values?",
+    "expected_tool": "get_dataset_overview",
+    "tool_arguments": {},
+    "expected": {
+      "row_count": 12,
+      "column_count": 7,
+      "missing_values": {
+        "tenure_months": 1,
+        "weekly_usage_hours": 1
+      }
+    }
+  },
+  {
+    "id": "monthly_price_statistics",
+    "question": "Report the count, mean, and median of monthly_price.",
+    "expected_tool": "get_column_statistics",
+    "tool_arguments": {
+      "column": "monthly_price"
+    },
+    "expected": {
+      "count": 12,
+      "mean": 26.666666666666668,
+      "median": 25.0
+    }
+  },
+  {
+    "id": "usage_churn_correlation",
+    "question": "Calculate the Pearson correlation between weekly_usage_hours and churned, report the complete observation count, and explain whether it proves causation.",
+    "expected_tool": "get_correlation",
+    "tool_arguments": {
+      "column_x": "weekly_usage_hours",
+      "column_y": "churned"
+    },
+    "expected": {
+      "observation_count": 11,
+      "pearson_correlation": -0.7313497539528113
+    }
+  }
+]
