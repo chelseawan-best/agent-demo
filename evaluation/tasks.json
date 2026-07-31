@@ -37,6 +37,9 @@
     "expected": {
       "observation_count": 11,
       "pearson_correlation": -0.7313497539528113
+    },
+    "expected_interpretation": {
+      "causation_proven": false
     }
   }
 ]

@@ -1,17 +1,20 @@
 # Statistical Agent Demo
 
-A small Microsoft Agent Framework project for answering statistical questions about a synthetic subscription dataset. An analysis agent selects deterministic Python tools, and a verifier agent independently checks the response.
+A statistical analysis agent built with Microsoft Agent Framework and an
+OpenAI-compatible API. The project uses deterministic pandas tools for
+calculation, a separate verifier model for review, and a final revision pass.
 
-## How It Works
+## Workflow
 
 ```text
-Question -> Analysis Agent -> Python Tool -> Answer -> Verifier Agent
+Question -> Analysis Agent -> Python Tools -> Verifier -> Revision Agent -> Final Answer
 ```
 
-- The LLM selects the calculation and explains the result.
-- pandas performs the numerical computation.
-- A second agent re-runs tools and returns `PASS` or `REVISE`.
-- Offline evaluation checks the statistical ground truth without an API.
+- The analysis agent selects tools and explains their results.
+- Python tools read the dataset and perform the calculations.
+- The verifier independently checks numerical claims and interpretation.
+- The revision agent reconciles the analysis with independently verified evidence
+  and produces the final answer.
 
 ## Project Structure
 
@@ -19,14 +22,15 @@ Question -> Analysis Agent -> Python Tool -> Answer -> Verifier Agent
 agent-demo/
 |-- data/sample.csv
 |-- evaluation/
-|   |-- tasks.json
-|   `-- evaluate.py
+|   |-- evaluate.py
+|   `-- tasks.json
 |-- src/agent_demo/
-|   |-- tools.py          # Statistical functions
-|   |-- agent_tools.py    # Microsoft Agent Framework tool wrappers
-|   |-- prompts.py        # Agent instructions
-|   |-- agents.py         # Analysis and verifier agent factories
-|   `-- run_demo.py       # End-to-end demo
+|   |-- agent_tools.py
+|   |-- agents.py
+|   |-- evaluation.py
+|   |-- prompts.py
+|   |-- run_demo.py
+|   `-- tools.py
 |-- tests/
 |-- .env.example
 `-- pyproject.toml
@@ -34,63 +38,51 @@ agent-demo/
 
 ## Setup
 
-Requirements: Python 3.11+, [`uv`](https://docs.astral.sh/uv/), and an OpenAI API key for live runs.
+Requirements: Python 3.11+, [`uv`](https://docs.astral.sh/uv/), and an
+OpenRouter API key.
 
 ```bash
 git clone https://github.com/chelseawan-best/agent-demo.git
 cd agent-demo
 uv sync --group dev
+cp .env.example .env
 ```
 
-For live execution, create `.env` locally:
+Add the API key to `.env`:
 
 ```dotenv
-OPENAI_API_KEY=your_official_openai_api_key
-OPENAI_MODEL=gpt-5.6-terra
+LLM_API_KEY=your_openrouter_api_key
+LLM_BASE_URL=https://openrouter.ai/api/v1
+ANALYSIS_MODEL=openai/gpt-4.1-mini
+VERIFIER_MODEL=google/gemini-2.5-flash
 ```
 
-Do not commit `.env`.
+The local `.env` file is ignored by Git.
 
 ## Run
 
-Run the tests:
-
 ```bash
+# Unit tests
 uv run pytest -v
-```
 
-Run the offline evaluation without an API key:
+# Validate deterministic ground truth without an API call
+PYTHONPATH=src uv run python evaluation/evaluate.py --mode ground-truth
 
-```bash
-PYTHONPATH=src uv run python evaluation/evaluate.py --mode offline
-```
-
-Run one live Analysis -> Verifier task:
-
-```bash
+# Run one end-to-end task
 PYTHONPATH=src uv run python -m agent_demo.run_demo
-```
 
-Run all evaluation tasks through both agents:
-
-```bash
+# Run all online evaluation tasks
 PYTHONPATH=src uv run python evaluation/evaluate.py --mode online
 ```
 
-Online results are written to `evaluation/results.json`.
-
-## Current Status
-
-- 7 tests pass.
-- 3/3 offline evaluation tasks pass.
-- Live execution is implemented but has not yet been measured with an official API key.
+Online evaluation results are written to `evaluation/results.json`.
 
 ## Limitations
 
 - The dataset is synthetic and contains 12 rows.
-- Pearson correlation does not establish causation.
-- The verifier is also model-based and may make mistakes.
-- This project demonstrates agent orchestration and evaluation; it does not train or fine-tune a model.
+- Correlation does not establish causation.
+- Model-based verification can still make mistakes.
+- The project demonstrates agent orchestration, not model training or fine-tuning.
 
 ## References
 

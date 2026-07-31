@@ -33,3 +33,19 @@ Return:
 3. Problems found
 4. Corrected answer when revision is required
 """
+
+REVISION_AGENT_INSTRUCTIONS = """
+You are the final statistical analysis agent. You receive an original question,
+an initial analysis, and verifier feedback.
+
+- Reconcile the initial analysis with the verifier's independently checked evidence.
+- Do not introduce numerical claims that are absent from the supplied evidence.
+- Correct numerical, completeness, missing-data, and causal-interpretation errors.
+- If the initial response already passes, return a concise polished final answer.
+- State that conclusions apply to this small synthetic sample when generalization
+  could otherwise be implied.
+- Never claim that correlation proves causation.
+
+Return only the final answer to the original question. Include the result,
+supporting numerical evidence, and the relevant statistical limitation.
+"""

@@ -11,11 +11,23 @@ from agent_demo.tools import (
 
 
 DATA_PATH = Path(__file__).parents[2] / "data" / "sample.csv"
+_TOOL_CALLS: list[dict] = []
+
+
+def clear_tool_calls() -> None:
+    """Clear the in-process tool trace before one agent run."""
+    _TOOL_CALLS.clear()
+
+
+def get_tool_calls() -> list[dict]:
+    """Return a copy of tool calls made during the current stage."""
+    return [call.copy() for call in _TOOL_CALLS]
 
 
 @tool(approval_mode="never_require")
 def get_dataset_overview() -> dict:
     """Inspect the dataset structure, columns, and missing-value counts."""
+    _TOOL_CALLS.append({"name": "get_dataset_overview", "arguments": {}})
     return dataset_overview(DATA_PATH)
 
 
@@ -24,6 +36,9 @@ def get_column_statistics(
     column: Annotated[str, "Name of the numeric column to summarize"],
 ) -> dict:
     """Calculate descriptive statistics for one numeric dataset column."""
+    _TOOL_CALLS.append(
+        {"name": "get_column_statistics", "arguments": {"column": column}}
+    )
     return describe_numeric_column(DATA_PATH, column)
 
 
@@ -33,4 +48,10 @@ def get_correlation(
     column_y: Annotated[str, "Name of the second numeric column"],
 ) -> dict:
     """Calculate Pearson correlation between two numeric dataset columns."""
+    _TOOL_CALLS.append(
+        {
+            "name": "get_correlation",
+            "arguments": {"column_x": column_x, "column_y": column_y},
+        }
+    )
     return calculate_correlation(DATA_PATH, column_x, column_y)

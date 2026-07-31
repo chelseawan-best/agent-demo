@@ -7,8 +7,11 @@ from typing import Any
 
 from agent_demo.agents import (
     create_analysis_agent,
+    create_revision_agent,
     create_verifier_agent,
 )
+from agent_demo.agent_tools import clear_tool_calls, get_tool_calls
+from agent_demo.evaluation import used_expected_tool
 from agent_demo.tools import (
     calculate_correlation,
     dataset_overview,
@@ -57,7 +60,7 @@ def matches_expected(actual: Any, expected: Any) -> bool:
     return actual == expected
 
 
-def run_offline() -> None:
+def validate_ground_truth() -> None:
     """Validate deterministic statistical ground truth without an API."""
     tasks = load_tasks()
     passed = 0
@@ -74,7 +77,7 @@ def run_offline() -> None:
             print("  expected:", task["expected"])
             print("  actual:", actual)
 
-    print(f"\n{passed}/{len(tasks)} offline checks passed")
+    print(f"\n{passed}/{len(tasks)} ground-truth checks passed")
 
     if passed != len(tasks):
         raise SystemExit(1)
@@ -85,12 +88,17 @@ async def run_online() -> None:
     tasks = load_tasks()
     analysis_agent = create_analysis_agent()
     verifier_agent = create_verifier_agent()
+    revision_agent = create_revision_agent()
     results = []
 
     for task in tasks:
         started = time.perf_counter()
-        analysis = await analysis_agent.run(task["question"])
 
+        clear_tool_calls()
+        analysis = await analysis_agent.run(task["question"])
+        analysis_tool_calls = get_tool_calls()
+
+        clear_tool_calls()
         verification_request = f"""
 Original question:
 {task["question"]}
@@ -101,6 +109,21 @@ Analysis response:
 Independently verify this response.
 """
         verification = await verifier_agent.run(verification_request)
+        verifier_tool_calls = get_tool_calls()
+
+        revision_request = f"""
+Original question:
+{task["question"]}
+
+Initial analysis:
+{analysis.text}
+
+Verifier feedback:
+{verification.text}
+
+Produce the final revised analysis.
+"""
+        revision = await revision_agent.run(revision_request)
         latency_seconds = time.perf_counter() - started
 
         results.append(
@@ -108,11 +131,26 @@ Independently verify this response.
                 "id": task["id"],
                 "question": task["question"],
                 "analysis_response": analysis.text,
+                "analysis_tool_calls": analysis_tool_calls,
+                "analysis_used_expected_tool": used_expected_tool(
+                    analysis_tool_calls, task
+                ),
                 "verifier_response": verification.text,
+                "verifier_tool_calls": verifier_tool_calls,
+                "final_analysis_response": revision.text,
+                "ground_truth": task["expected"],
+                "expected_tool": task["expected_tool"],
+                "expected_tool_arguments": task["tool_arguments"],
                 "latency_seconds": latency_seconds,
             }
         )
-        print(f"[COMPLETED] {task['id']}")
+        analysis_status = (
+            "PASS" if used_expected_tool(analysis_tool_calls, task) else "FAIL"
+        )
+        print(
+            f"[COMPLETED] {task['id']} "
+            f"analysis_tool={analysis_status}"
+        )
 
     RESULTS_PATH.write_text(
         json.dumps(results, indent=2),
@@ -126,13 +164,14 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--mode",
-        choices=["offline", "online"],
-        default="offline",
+        choices=["ground-truth", "online", "offline"],
+        default="ground-truth",
+        help="Use 'ground-truth' without an API or 'online' for the three-agent workflow.",
     )
     arguments = parser.parse_args()
 
-    if arguments.mode == "offline":
-        run_offline()
+    if arguments.mode in {"ground-truth", "offline"}:
+        validate_ground_truth()
     else:
         asyncio.run(run_online())
 

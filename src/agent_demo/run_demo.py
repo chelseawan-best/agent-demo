@@ -1,6 +1,7 @@
 import asyncio
 from agent_demo.agents import (
     create_analysis_agent,
+    create_revision_agent,
     create_verifier_agent,
 )
 
@@ -16,6 +17,7 @@ async def main() -> None:
     """Run one statistical analysis Agent task."""
     analysis_agent = create_analysis_agent()
     verifier_agent = create_verifier_agent()
+    revision_agent = create_revision_agent()
 
     print("Question:")
     print(QUESTION)
@@ -39,6 +41,23 @@ async def main() -> None:
 
     print("\nVerifier response:")
     print(verification_response.text)
+
+    revision_request = f"""
+    Original question:
+    {QUESTION}
+
+    Initial analysis:
+    {analysis_response.text}
+
+    Verifier feedback:
+    {verification_response.text}
+
+    Produce the final revised analysis.
+    """
+    revision_response = await revision_agent.run(revision_request)
+
+    print("\nFinal analysis:")
+    print(revision_response.text)
 
 
 if __name__ == "__main__":
